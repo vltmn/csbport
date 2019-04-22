@@ -1,6 +1,6 @@
 const path = require("path");
 require("dotenv").config({
-  path: path.resolve(process.cwd(), ".local.env"),
+  path: path.resolve(process.cwd(), ".env.local"),
   debug: true
 });
 
