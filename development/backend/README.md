@@ -6,7 +6,7 @@ Run the following in a terminal from the directory this file resides in
 ```bash
 yarn
 ```
-Create a file named *.local.env* in this directory with the following content (altered for your usage of course)
+Create a file named *.env.local* in this directory with the following content (altered for your usage of course)
 ```
 PORTREQUESTS_TABLE_NAME=portRequests # name of the table in dynamodb
 AWS_CONFIG='{"region": "eu-west-2"}' # aws config as json string
