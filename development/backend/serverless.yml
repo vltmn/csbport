@@ -5,7 +5,10 @@ plugins:
   - serverless-dotenv-plugin
 
 custom: 
-  tableName: 'portrequest-table-${opt:stage}'
+  baseTableName: 'portrequest-table-${self:provider.stage}'
+  webSocketApiName: 'csbport-ws-${self:provider.stage}'
+  requestsTableName: '${self:custom.baseTableName}-requests'
+  clientsTableName: '${self:custom.baseTableName}-clients'
   privateKey: ${env:PRIVATE_KEY}
   publicKey: ${env:PUBLIC_KEY}
 
@@ -13,7 +16,15 @@ provider:
   name: aws
   runtime: nodejs8.10
   region: eu-west-1
+  stage: ${opt:stage, 'dev'}
+  websocketApiRouteSelectionExpression: $request.body.action
+  websocketApiName: csbport-ws-${self:provider.stage}
   iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "execute-api:ManageConnections"
+      Resource:
+        - "arn:aws:execute-api:*:*:**/@connections/*"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -24,8 +35,10 @@ provider:
         - dynamodb:DeleteItem
       Resource:
         - { "Fn::GetAtt": ["PortRequestDynamoTable", "Arn" ] }
+        - { "Fn::GetAtt": ["WSClientsDynamoTable", "Arn" ] }
   environment:
-    PORTREQUESTS_TABLE_NAME: ${self:custom.tableName}
+    CLIENTS_TABLE_NAME: ${self:custom.clientsTableName}
+    PORTREQUESTS_TABLE_NAME: ${self:custom.requestsTableName}
     PRIVATE_KEY: ${self:custom.privateKey}
     PUBLIC_KEY: ${self:custom.publicKey}
 
@@ -42,9 +55,35 @@ functions:
           path: /{proxy+}
           method: ANY
           cors: true
+  ws-handler:
+    handler: index.wsHandler
+    events: 
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: $default
+      - websocket: 
+          route: join
 
 resources:
   Resources:
+    WSClientsDynamoTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: connectionId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.clientsTableName}
     PortRequestDynamoTable:
       Type: 'AWS::DynamoDB::Table'
       Properties:
@@ -59,4 +98,4 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:custom.tableName}
+        TableName: ${self:custom.requestsTableName}
