@@ -1,5 +1,6 @@
 const db = require('./services/db');
 const csb = require('./services/csb');
+const notifier = require('./services/notifier');
 const {decrypt} = require('./services/crypto');
 
 const createRequest = async (user, pw, doorCode, pwEncrypted, pubKey) => {
@@ -39,6 +40,7 @@ const useRequest = async (requestId) => {
     await csb.openDoor(doorCode);
     console.log("Deleting request with id: " + requestId + " from the db");
     await db.deleteRequest(requestId);
+    await notifier.notifyDoorOpened(userName);
     return;
 }
 const validateRequest = async (requestId) => {

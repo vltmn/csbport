@@ -52,12 +52,14 @@ const getRequest = (id) => {
     });
 }
 
-const createClient = async (connectionId) => {
+const createClient = async (connectionId, domain, stage) => {
     const putItem = {
         TableName: CLIENTS_TABLE_NAME,
         Item: {
             connectionId,
-            namespaces: dynamoDb.createSet(['DEFAULT'])
+            namespaces: dynamoDb.createSet(['DEFAULT']),
+            domain,
+            stage
         }
     };
     await dynamoDb.put(putItem).promise();
@@ -95,4 +97,16 @@ const removeClient = (connectionId) => {
         return data;
     });
 }
-module.exports = {createRequest, deleteRequest, getRequest, createClient, addNameSpace, removeClient};
+
+const getConnectionsByNamespace = async (namespace) => {
+    const params = {
+        TableName: CLIENTS_TABLE_NAME,
+        FilterExpression: "contains (namespaces, :namespace)",
+        ExpressionAttributeValues: {
+            ":namespace": namespace
+        }
+    };
+    const data = await dynamoDb.scan(params).promise();
+    return data.Items;
+}
+module.exports = {createRequest, deleteRequest, getRequest, createClient, addNameSpace, removeClient, getConnectionsByNamespace};

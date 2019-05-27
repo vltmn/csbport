@@ -2,7 +2,9 @@ const { createClient, addNameSpace, removeClient} = require('./services/db');
 
 const handleCreateClient = async (event) => {
     const connectionId = event.requestContext.connectionId;
-    return await createClient(connectionId);
+    const domain = event.requestContext.domainName;
+    const stage = event.requestContext.stage;
+    return await createClient(connectionId, domain, stage);
 }
 
 const handleJoin = async (event) => {
